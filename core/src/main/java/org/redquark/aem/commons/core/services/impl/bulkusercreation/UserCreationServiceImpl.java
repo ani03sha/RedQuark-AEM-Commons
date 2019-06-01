@@ -16,6 +16,7 @@ import org.apache.jackrabbit.api.security.user.UserManager;
 import org.apache.sling.api.resource.LoginException;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ResourceResolverFactory;
+import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.redquark.aem.commons.core.models.bulkusercreation.UserDetails;
 import org.redquark.aem.commons.core.services.bulkusercreation.UserCreationService;
@@ -26,6 +27,7 @@ import org.slf4j.LoggerFactory;
  * @author Anirudh Sharma
  *
  */
+@Component(service = UserCreationService.class, immediate = true)
 public class UserCreationServiceImpl implements UserCreationService {
 
 	// Default logger

@@ -5,6 +5,7 @@ import static org.redquark.aem.commons.core.constants.AppConstants.EMPTY_STRING;
 import java.io.File;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.Servlet;
@@ -18,6 +19,10 @@ import org.apache.sling.api.servlets.HttpConstants;
 import org.apache.sling.api.servlets.SlingAllMethodsServlet;
 import org.osgi.framework.Constants;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+import org.redquark.aem.commons.core.models.bulkusercreation.UserDetails;
+import org.redquark.aem.commons.core.services.bulkusercreation.FileReaderService;
+import org.redquark.aem.commons.core.services.bulkusercreation.UserCreationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +40,14 @@ public class HandleFileUploadServlet extends SlingAllMethodsServlet {
 
 	// Logger
 	private final Logger log = LoggerFactory.getLogger(this.getClass());
+
+	// Injecting reference of the FileReaderService
+	@Reference
+	private FileReaderService fileReaderService;
+
+	// Injecting reference of the UserCreationService
+	@Reference
+	private UserCreationService userCreationService;
 
 	/**
 	 * Handles the post request when the file is uploaded from the front end
@@ -93,13 +106,28 @@ public class HandleFileUploadServlet extends SlingAllMethodsServlet {
 
 						// Getting the absolute path of the file
 						createdFilePath = file.getAbsolutePath();
-						
+
 						log.debug("Temporary file path is: {}", createdFilePath);
 					}
 				}
-				
+
 				// Printing the response to the screen via response object
 				printWriter.println("File uploaded successfully");
+
+				// Getting the list of users from the excel file
+				List<UserDetails> users = fileReaderService.readExcel(createdFilePath);
+
+				log.info("Users have been read from the file");
+				printWriter.println("Users have been read from the file");
+
+				// Deleting the temporary file
+				file.delete();
+
+				// Creating users in the AEM instance
+				userCreationService.createUsers(users);
+
+				log.info("Users have been created successfully");
+				printWriter.println("Users have been created successfully");
 			}
 
 		} catch (Exception e) {

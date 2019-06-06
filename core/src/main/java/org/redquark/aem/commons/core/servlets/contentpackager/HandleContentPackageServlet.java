@@ -1,4 +1,4 @@
-package org.redquark.aem.commons.core.servlets.bulkusercreation;
+package org.redquark.aem.commons.core.servlets.contentpackager;
 
 import static org.redquark.aem.commons.core.constants.AppConstants.EMPTY_STRING;
 
@@ -20,9 +20,9 @@ import org.apache.sling.api.servlets.SlingAllMethodsServlet;
 import org.osgi.framework.Constants;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
-import org.redquark.aem.commons.core.models.bulkusercreation.UserDetails;
-import org.redquark.aem.commons.core.services.bulkusercreation.FileReaderService;
-import org.redquark.aem.commons.core.services.bulkusercreation.UserCreationService;
+import org.redquark.aem.commons.core.models.contentpackager.ContentFilters;
+import org.redquark.aem.commons.core.services.contentpackager.FileReaderService;
+import org.redquark.aem.commons.core.services.contentpackager.PackagerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,41 +32,42 @@ import org.slf4j.LoggerFactory;
  */
 @Component(service = Servlet.class, property = { Constants.SERVICE_DESCRIPTION + "= Handle File Upload Servlet",
 		"sling.servlet.methods=" + HttpConstants.METHOD_POST,
-		"sling.servlet.paths=" + "/bin/redquarkcommons/bulkusercreation/fileupload" })
-public class HandleFileUploadServlet extends SlingAllMethodsServlet {
+		"sling.servlet.paths=" + "/bin/redquarkcommons/contentpackager/fileupload" })
+public class HandleContentPackageServlet extends SlingAllMethodsServlet {
 
 	// Generated serial version UID
-	private static final long serialVersionUID = 2800760449052052033L;
+	private static final long serialVersionUID = 560680167075919693L;
 
 	// Logger
 	private final Logger log = LoggerFactory.getLogger(this.getClass());
+
+	// Path of the temporary file
+	private String tempFilePath;
+
+	// PrintWriter instance to set response
+	private PrintWriter printWriter;
 
 	// Injecting reference of the FileReaderService
 	@Reference
 	private FileReaderService fileReaderService;
 
-	// Injecting reference of the UserCreationService
+	// Injecting reference of PackagerService
 	@Reference
-	private UserCreationService userCreationService;
+	private PackagerService packagerService;
 
-	/**
-	 * Handles the post request when the file is uploaded from the front end
-	 */
 	@Override
 	protected void doPost(SlingHttpServletRequest request, SlingHttpServletResponse response) {
 
-		log.trace("Invoking HandleFileUploadServlet...");
-
-		// Path of the temporary file
-		String tempFilePath;
-
-		// PrintWriter instance to set response
-		PrintWriter printWriter = null;
+		log.info("Invoking HandleContentPackageServlet...");
 
 		try {
 
-			// Check if the request is multi-part
-			boolean isMultipart = ServletFileUpload.isMultipartContent(request);
+			// Package and Group name values
+			String packageName = EMPTY_STRING;
+			String groupName = EMPTY_STRING;
+
+			// Check if the file is multi-part
+			final boolean isMultipart = ServletFileUpload.isMultipartContent(request);
 
 			// Setting the temporary file path - This path will be on the server from
 			// where the AEM is running
@@ -104,39 +105,36 @@ public class HandleFileUploadServlet extends SlingAllMethodsServlet {
 						// Writing contents from input stream to the temporary file
 						FileUtils.copyInputStreamToFile(inputStream, file);
 
-						// Getting the absolute path of the file
 						createdFilePath = file.getAbsolutePath();
-
-						log.debug("Temporary file path is: {}", createdFilePath);
+					} else {
+						packageName = request.getParameter("package");
+						groupName = request.getParameter("group");
 					}
 				}
-
-				// Printing the response to the screen via response object
 				printWriter.println("File uploaded successfully");
 
 				// Getting the list of users from the excel file
-				List<UserDetails> users = fileReaderService.readExcel(createdFilePath);
+				List<ContentFilters> filters = fileReaderService.readData(createdFilePath);
 
-				log.info("Users have been read from the file");
-				printWriter.println("Users have been read from the file");
+				log.info("Filters have been read from the file");
+				printWriter.println("Filters have been read from the file");
 
 				// Deleting the temporary file
 				file.delete();
 
-				// Creating users in the AEM instance
-				userCreationService.createUsers(users);
+				// Calling the PackagerService to create package in AEM Package Manager
+				boolean isSuccessful = packagerService.createPackage(packageName, groupName, filters, request);
 
-				log.info("Users have been created successfully");
-				printWriter.println("Users have been created successfully");
+				if (isSuccessful) {
+					log.info("Package has been created successfully");
+					printWriter.println("Package has been created successfully");
+				} else {
+					printWriter.println("Some error occurred. Check the logs.");
+				}
+
 			}
-
 		} catch (Exception e) {
 			log.error(e.getMessage(), e);
-			printWriter.println(e.getMessage());
-		} finally {
-			if (printWriter != null) {
-				printWriter.close();
-			}
 		}
 	}
 

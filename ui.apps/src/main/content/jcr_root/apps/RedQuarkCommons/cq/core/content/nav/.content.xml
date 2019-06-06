@@ -12,7 +12,14 @@
                 jcr:title="Bulk Users Creation"
                 href="/apps/RedQuarkCommons/admin/ext/createusers/content/createusers.html"
                 icon="user"
-                id="granite-security-users-users"/>
+                id="granite-rq-bulk-users"/>
+            <contentPackager
+                jcr:description="Create content package from the filters in the excel file"
+                jcr:primaryType="nt:unstructured"
+                jcr:title="Content Packager"
+                href="/apps/RedQuarkCommons/admin/ext/contentpackager/content/contentPackager.html"
+                icon="project"
+                id="granite-rq-content-packager"/>
         </redquark>
     </tools>
 </jcr:root>

@@ -29,7 +29,7 @@
         granite:id="contentPackagerEntryForm"
         jcr:primaryType="nt:unstructured"
         sling:resourceType="granite/ui/components/coral/foundation/form"
-        action="/bin/redquarkcommons/fileupload"
+        action="/bin/redquarkcommons/contentpackager/fileupload"
         enctype="multipart/form-data"
         method="post">
         <items jcr:primaryType="nt:unstructured">
